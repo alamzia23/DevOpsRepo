@@ -1,0 +1,37 @@
+name: Get TESTED commits and create PR to Int
+
+on:
+  push:
+    branches:
+      - Dev
+
+jobs:
+  create-int-branch:
+    if: steps.identify-tested-commits.outputs.tested_commits != ''
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Setup Git
+        uses: actions/setup-git@v2
+
+      - name: Create Int branch
+        run: git checkout -b Int
+
+      - name: Fetch all branches and tags
+        run: git fetch --depth=2147483647
+
+      - name: Identify TESTED commits on Dev branch
+        id: identify-tested-commits
+        run: |
+          tested_commits=$(git rev-list --all --grep='TESTED' Dev)
+
+      - name: Create PR to Int branch
+        id: create-pr
+        if: steps.identify-tested-commits.outputs.tested_commits != ''
+        run: |
+          git cherry-pick ${{ steps.identify-tested-commits.outputs.tested_commits }}
+          git push origin Int
+          gh pr create --title "TESTED commits from Dev" --body "These commits have been marked as TESTED on the Dev branch and are ready for integration into the Int branch." --base Dev --head Int
