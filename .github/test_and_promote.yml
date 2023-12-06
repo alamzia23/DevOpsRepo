@@ -1,0 +1,32 @@
+name: Automate Testing and Promotion
+
+on:
+  push:
+    branches:
+      - Dev
+
+jobs:
+  automate_testing_and_promotion:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Identify Tested Commits
+        id: identify_tested_commits
+        run: |
+          PR_COMMITS=$(git log --format=%H ${{ github.event.before }}..${{ github.sha }})
+          TESTED_COMMITS=$(git log --format=%H --grep="TESTED" $PR_COMMITS)
+          echo "::set-output name=tested_commits::$TESTED_COMMITS"
+
+      - name: Create 'Int' Branch
+        if: steps.identify_tested_commits.outputs.tested_commits != ""
+        run: |
+          git checkout -b Int
+          git push origin Int
+
+      - name: Create Pull Request to 'Int'
+        if: steps.identify_tested_commits.outputs.tested_commits != ""
+        run: |
+          gh pr create --base Int --head Dev --title "Merge 'Dev' into 'Int'" --body "Promoting tested changes from 'Dev' to 'Int'"
