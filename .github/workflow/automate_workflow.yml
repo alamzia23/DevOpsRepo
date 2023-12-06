@@ -3,7 +3,7 @@ name: Get TESTED commits and create PR to Int
 on:
   push:
     branches:
-      - Dev
+      - main
 
 jobs:
   create-int-branch:
